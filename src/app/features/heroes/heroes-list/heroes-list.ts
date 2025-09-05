@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect, computed } from '@angular/core';
+import { Component, inject, signal, effect, computed, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatPaginatorModule, PageEvent, MatPaginatorIntl } from '@angular/material/paginator';
+import { MatPaginatorModule, PageEvent, MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 function esPaginatorIntl(): MatPaginatorIntl {
@@ -94,16 +94,11 @@ function esPaginatorIntl(): MatPaginatorIntl {
         </table>
       </div>
 
-      <div class="meta" *ngIf="(paginated$ | async) as page">
-        Mostrando {{ page.length }} de {{ length() }} ({{ pageSize() }} por página) ·
-        Página {{ currentPage() }} de {{ totalPages() }}
-      </div>
-
       <mat-paginator
         [length]="length()"
         [pageIndex]="pageIndex()"
         [pageSize]="pageSize()"
-        [pageSizeOptions]="[5,10,20]"
+        [pageSizeOptions]="pageSizeOptions"
         (page)="onPage($event)">
       </mat-paginator>
     </mat-card-content>
@@ -122,18 +117,21 @@ function esPaginatorIntl(): MatPaginatorIntl {
   tbody td { border-bottom: 1px solid #f0f0f0; padding: 10px; }
   .actions-col { width: 128px; }
   .row-actions { display: flex; gap: 6px; }
-  .meta { margin: 8px 0 4px; font-size: 12px; color: #616161; }
 `]
 })
 export class HeroesListComponent {
   private svc = inject(HeroesService);
   private router = inject(Router);
   private snack = inject(MatSnackBar);
+  private intl = inject(MatPaginatorIntl);
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   filter = new FormControl('', { nonNullable: true });
 
   pageIndex = signal(0);
   pageSize  = signal(5);
+  readonly pageSizeOptions = [5, 10, 20];
 
   private pageIndex$ = toObservable(this.pageIndex);
   private pageSize$  = toObservable(this.pageSize);
@@ -148,16 +146,21 @@ export class HeroesListComponent {
     })
   );
 
-  length = toSignal(
-    this.filtered$.pipe(map(list => list.length)),
-    { initialValue: 0 }
-  );
+  length = toSignal(this.filtered$.pipe(map(list => list.length)), { initialValue: 0 });
 
   private clampEffect = effect(() => {
     const len  = this.length();
     const size = this.pageSize();
     const last = Math.max(0, Math.ceil(len / Math.max(1, size)) - 1);
     if (this.pageIndex() > last) this.pageIndex.set(last);
+  });
+
+  private refreshRangeLabelEffect = effect(() => {
+    this.pageIndex();
+    this.pageSize();
+    this.length();
+
+    queueMicrotask(() => this.intl.changes.next());
   });
 
   paginated$ = combineLatest([this.filtered$, this.pageIndex$, this.pageSize$]).pipe(
@@ -167,19 +170,17 @@ export class HeroesListComponent {
     })
   );
 
-  totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.length() / Math.max(1, this.pageSize())))
-  );
-  currentPage = computed(() => this.pageIndex() + 1);
-
   constructor() {
-    this.filter.valueChanges.subscribe(() => this.pageIndex.set(0));
+    this.filter.valueChanges.subscribe(() => {
+      this.pageIndex.set(0);
+      this.paginator?.firstPage();
+    });
   }
 
   onPage(e: PageEvent) {
-    if (e.pageSize !== this.pageSize()) this.pageIndex.set(0);
+    const sizeChanged = e.pageSize !== this.pageSize();
     this.pageSize.set(e.pageSize);
-    this.pageIndex.set(e.pageIndex);
+    this.pageIndex.set(sizeChanged ? 0 : e.pageIndex);
   }
 
   trackById = (_: number, item: Hero) => item.id;
