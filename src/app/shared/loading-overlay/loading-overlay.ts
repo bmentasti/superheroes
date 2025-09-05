@@ -1,7 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { LoadingService } from '../../core/services/loading';
+import { LoadingService } from '../../services/loading';
 
 @Component({
   selector: 'app-loading-overlay',
