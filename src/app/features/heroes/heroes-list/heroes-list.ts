@@ -1,9 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { combineLatest, startWith, map } from 'rxjs';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { HeroesService } from '../../../services/hero.services';
 import { Hero } from '../../../models/hero';
@@ -56,7 +56,7 @@ function esPaginatorIntl(): MatPaginatorIntl {
   <mat-card>
     <mat-card-content>
       <div class="filters">
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Filtrar por nombre</mat-label>
           <input matInput [formControl]="filter" placeholder="Ej: man" />
           <button *ngIf="filter.value" matSuffix mat-icon-button aria-label="Limpiar"
@@ -94,6 +94,11 @@ function esPaginatorIntl(): MatPaginatorIntl {
         </table>
       </div>
 
+      <div class="meta" *ngIf="(paginated$ | async) as page">
+        Mostrando {{ page.length }} de {{ length() }} ({{ pageSize() }} por página) ·
+        Página {{ currentPage() }} de {{ totalPages() }}
+      </div>
+
       <mat-paginator
         [length]="length()"
         [pageIndex]="pageIndex()"
@@ -110,12 +115,14 @@ function esPaginatorIntl(): MatPaginatorIntl {
   .spacer { flex: 1 1 auto; }
   .container { max-width: 980px; margin: 16px auto; padding: 0 12px; }
   .filters { margin-bottom: 8px; }
+  .filters .full-width { width: 100%; }
   .table-wrap { overflow: auto; }
   .table { width: 100%; border-collapse: collapse; }
   thead th { text-align: left; border-bottom: 1px solid #e0e0e0; padding: 10px; }
   tbody td { border-bottom: 1px solid #f0f0f0; padding: 10px; }
   .actions-col { width: 128px; }
   .row-actions { display: flex; gap: 6px; }
+  .meta { margin: 8px 0 4px; font-size: 12px; color: #616161; }
 `]
 })
 export class HeroesListComponent {
@@ -125,12 +132,11 @@ export class HeroesListComponent {
 
   filter = new FormControl('', { nonNullable: true });
 
-  length = signal(0);
   pageIndex = signal(0);
-  pageSize = signal(5);
+  pageSize  = signal(5);
 
   private pageIndex$ = toObservable(this.pageIndex);
-  private pageSize$ = toObservable(this.pageSize);
+  private pageSize$  = toObservable(this.pageSize);
 
   private filtered$ = combineLatest([
     this.svc.getAll(),
@@ -142,20 +148,29 @@ export class HeroesListComponent {
     })
   );
 
+  length = toSignal(
+    this.filtered$.pipe(map(list => list.length)),
+    { initialValue: 0 }
+  );
+
+  private clampEffect = effect(() => {
+    const len  = this.length();
+    const size = this.pageSize();
+    const last = Math.max(0, Math.ceil(len / Math.max(1, size)) - 1);
+    if (this.pageIndex() > last) this.pageIndex.set(last);
+  });
+
   paginated$ = combineLatest([this.filtered$, this.pageIndex$, this.pageSize$]).pipe(
     map(([list, pageIndex, pageSize]) => {
-      this.length.set(list.length);
-
-      const lastPageIndex = Math.max(0, Math.ceil(list.length / pageSize) - 1);
-      if (pageIndex > lastPageIndex) {
-        this.pageIndex.set(lastPageIndex);
-        pageIndex = lastPageIndex;
-      }
-
       const start = pageIndex * pageSize;
       return list.slice(start, start + pageSize);
     })
   );
+
+  totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.length() / Math.max(1, this.pageSize())))
+  );
+  currentPage = computed(() => this.pageIndex() + 1);
 
   constructor() {
     this.filter.valueChanges.subscribe(() => this.pageIndex.set(0));
@@ -169,7 +184,7 @@ export class HeroesListComponent {
 
   trackById = (_: number, item: Hero) => item.id;
 
-  onAdd() { this.router.navigate(['/heroes/new']); }
+  onAdd()  { this.router.navigate(['/heroes/new']); }
   onEdit(id: string) { this.router.navigate(['/heroes', id, 'edit']); }
 
   confirmDelete(id: string) {

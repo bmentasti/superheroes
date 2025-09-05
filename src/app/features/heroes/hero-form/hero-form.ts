@@ -39,15 +39,21 @@ import { MatSelectModule } from '@angular/material/select';
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form">
         <mat-form-field appearance="outline">
           <mat-label>Nombre *</mat-label>
-          <input matInput formControlName="name" appUppercase placeholder="Ej: Superheroe" />
-          <mat-error *ngIf="form.controls.name.touched && form.controls.name.invalid">
-            El nombre es requerido (mín. 3).
+          <input matInput formControlName="name" appUppercase placeholder="Ej: Superhéroe" required />
+          <mat-error *ngIf="form.controls.name.touched && form.controls.name.errors?.['required']">
+            El nombre es requerido.
+          </mat-error>
+          <mat-error *ngIf="form.controls.name.touched && form.controls.name.errors?.['minlength']">
+            Debe tener al menos 3 caracteres.
           </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Poder</mat-label>
-          <input matInput formControlName="power" placeholder="Ej: Vuelo" />
+          <mat-label>Poder *</mat-label>
+          <input matInput formControlName="power" placeholder="Ej: Vuelo" required />
+          <mat-error *ngIf="form.controls.power.touched && form.controls.power.errors?.['required']">
+            El poder es requerido.
+          </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -90,8 +96,8 @@ export class HeroFormComponent implements OnInit {
   originalCreatedAt: number | null = null;
 
   form = this.fb.group({
-    name: ['', [Validators.required, Validators.minLength(3)]],
-    power: [''],
+    name: this.fb.control<string>('', [Validators.required, Validators.minLength(3)]),
+    power: this.fb.control<string>('', [Validators.required]),
     brand: this.fb.control<string>('Marvel')
   });
 
@@ -120,7 +126,11 @@ export class HeroFormComponent implements OnInit {
   }
 
   onSubmit() {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
     const { name, power, brand } = this.form.getRawValue();
 
     if (this.isEdit && this.currentId) {
@@ -142,5 +152,5 @@ export class HeroFormComponent implements OnInit {
     }
   }
 
-  cancel(){ this.router.navigate(['/heroes']); }
+  cancel() { this.router.navigate(['/heroes']); }
 }
