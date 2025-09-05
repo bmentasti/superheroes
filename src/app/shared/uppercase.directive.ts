@@ -2,7 +2,7 @@ import { Directive, HostListener } from '@angular/core';
 
 @Directive({
   selector: 'input[appUppercase]',
-  standalone: true
+  standalone: true,
 })
 export class UppercaseDirective {
   @HostListener('input', ['$event'])
@@ -12,6 +12,6 @@ export class UppercaseDirective {
     const end = input.selectionEnd ?? input.value.length;
     input.value = input.value.toUpperCase();
     input.setSelectionRange(start, end);
-    input.dispatchEvent(new Event('input')); 
+    input.dispatchEvent(new Event('input'));
   }
 }

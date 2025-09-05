@@ -6,9 +6,8 @@ import { LoadingOverlayComponent } from './shared/loading-overlay/loading-overla
   selector: 'app-root',
   imports: [RouterOutlet, LoadingOverlayComponent],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
 })
 export class App {
   protected readonly title = signal('superheroes');
 }
-

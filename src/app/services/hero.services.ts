@@ -31,7 +31,6 @@ const seed: Hero[] = [
   { id: '25', name: 'Daredevil',       power: 'Radar sense',          createdAt: Date.now() - 4000,  brand: 'Marvel' },
 ];
 
-
 function genId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
   return `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
@@ -47,15 +46,13 @@ export class HeroesService {
   }
 
   getById(id: string): Observable<Hero | undefined> {
-    return this.getAll().pipe(map(list => list.find(h => h.id === id)));
+    return this.getAll().pipe(map((list) => list.find((h) => h.id === id)));
   }
 
   searchByName(term: string): Observable<Hero[]> {
     const t = term.trim().toLowerCase();
     if (!t) return this.getAll();
-    return this.getAll().pipe(
-      map(list => list.filter(h => h.name.toLowerCase().includes(t)))
-    );
+    return this.getAll().pipe(map((list) => list.filter((h) => h.name.toLowerCase().includes(t))));
   }
 
   add(partial: Omit<Hero, 'id' | 'createdAt'>): Observable<Hero> {
@@ -66,13 +63,13 @@ export class HeroesService {
   }
 
   update(hero: Hero): Observable<Hero> {
-    const next = this._heroes$.value.map(h => h.id === hero.id ? { ...h, ...hero } : h);
+    const next = this._heroes$.value.map((h) => (h.id === hero.id ? { ...h, ...hero } : h));
     this._heroes$.next(next);
     return of(hero).pipe(delay(this.latencyMs));
   }
 
   remove(id: string): Observable<string> {
-    const next = this._heroes$.value.filter(h => h.id !== id);
+    const next = this._heroes$.value.filter((h) => h.id !== id);
     this._heroes$.next(next);
     return of(id).pipe(delay(this.latencyMs));
   }

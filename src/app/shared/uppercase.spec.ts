@@ -34,7 +34,7 @@ describe('UppercaseDirective', () => {
 
   it('convierte a mayúsculas y mantiene el caret', () => {
     input.value = 'suPer man';
-    input.setSelectionRange(9, 9); 
+    input.setSelectionRange(9, 9);
 
     let calls = 0;
     const originalDispatch = input.dispatchEvent.bind(input);

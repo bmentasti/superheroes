@@ -7,5 +7,5 @@ export const routes: Routes = [
   { path: 'heroes', component: HeroesListComponent },
   { path: 'heroes/new', component: HeroFormComponent },
   { path: 'heroes/:id/edit', component: HeroFormComponent },
-  { path: '**', redirectTo: 'heroes' }
+  { path: '**', redirectTo: 'heroes' },
 ];

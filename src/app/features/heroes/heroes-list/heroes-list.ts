@@ -14,7 +14,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatPaginatorModule, PageEvent, MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
+import {
+  MatPaginatorModule,
+  PageEvent,
+  MatPaginator,
+  MatPaginatorIntl,
+} from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 function esPaginatorIntl(): MatPaginatorIntl {
@@ -38,86 +43,142 @@ function esPaginatorIntl(): MatPaginatorIntl {
   standalone: true,
   providers: [{ provide: MatPaginatorIntl, useFactory: esPaginatorIntl }],
   imports: [
-    CommonModule, ReactiveFormsModule, RouterModule,
-    MatToolbarModule, MatFormFieldModule, MatInputModule,
-    MatIconModule, MatButtonModule, MatCardModule,
-    MatPaginatorModule, MatSnackBarModule
+    CommonModule,
+    ReactiveFormsModule,
+    RouterModule,
+    MatToolbarModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatButtonModule,
+    MatCardModule,
+    MatPaginatorModule,
+    MatSnackBarModule,
   ],
   template: `
-<mat-toolbar color="primary" class="toolbar">
-  <span>Héroes</span>
-  <span class="spacer"></span>
-  <button mat-raised-button color="accent" (click)="onAdd()">
-    <mat-icon>add</mat-icon> Añadir
-  </button>
-</mat-toolbar>
+    <mat-toolbar color="primary" class="toolbar">
+      <span>Superheroes</span>
+      <span class="spacer"></span>
+      <button mat-raised-button color="accent" (click)="onAdd()">
+        <mat-icon>add</mat-icon> Añadir
+      </button>
+    </mat-toolbar>
 
-<main class="container">
-  <mat-card>
-    <mat-card-content>
-      <div class="filters">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Filtrar por nombre</mat-label>
-          <input matInput [formControl]="filter" placeholder="Ej: man" />
-          <button *ngIf="filter.value" matSuffix mat-icon-button aria-label="Limpiar"
-                  (click)="filter.setValue('')">
-            <mat-icon>close</mat-icon>
-          </button>
-        </mat-form-field>
-      </div>
+    <main class="container">
+      <mat-card>
+        <mat-card-content>
+          <div class="filters">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Filtrar por nombre</mat-label>
+              <input matInput [formControl]="filter" placeholder="Ej: man" />
+              <button
+                *ngIf="filter.value"
+                matSuffix
+                mat-icon-button
+                aria-label="Limpiar"
+                (click)="filter.setValue('')"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            </mat-form-field>
+          </div>
 
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Poder</th>
-              <th>Marca</th>
-              <th class="actions-col">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let h of paginated$ | async; trackBy: trackById">
-              <td>{{ h.name }}</td>
-              <td>{{ h.power || '—' }}</td>
-              <td>{{ h.brand }}</td>
-              <td class="row-actions">
-                <button mat-icon-button color="primary" (click)="onEdit(h.id)" aria-label="Editar">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button mat-icon-button color="warn" (click)="confirmDelete(h.id)" aria-label="Borrar">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Poder</th>
+                  <th>Marca</th>
+                  <th class="actions-col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let h of paginated$ | async; trackBy: trackById">
+                  <td>{{ h.name }}</td>
+                  <td>{{ h.power || '—' }}</td>
+                  <td>{{ h.brand }}</td>
+                  <td class="row-actions">
+                    <button
+                      mat-icon-button
+                      color="primary"
+                      (click)="onEdit(h.id)"
+                      aria-label="Editar"
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      (click)="confirmDelete(h.id)"
+                      aria-label="Borrar"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-      <mat-paginator
-        [length]="length()"
-        [pageIndex]="pageIndex()"
-        [pageSize]="pageSize()"
-        [pageSizeOptions]="pageSizeOptions"
-        (page)="onPage($event)">
-      </mat-paginator>
-    </mat-card-content>
-  </mat-card>
-</main>
-`,
-  styles: [`
-  .toolbar { position: sticky; top: 0; z-index: 2; }
-  .spacer { flex: 1 1 auto; }
-  .container { max-width: 980px; margin: 16px auto; padding: 0 12px; }
-  .filters { margin-bottom: 8px; }
-  .filters .full-width { width: 100%; }
-  .table-wrap { overflow: auto; }
-  .table { width: 100%; border-collapse: collapse; }
-  thead th { text-align: left; border-bottom: 1px solid #e0e0e0; padding: 10px; }
-  tbody td { border-bottom: 1px solid #f0f0f0; padding: 10px; }
-  .actions-col { width: 128px; }
-  .row-actions { display: flex; gap: 6px; }
-`]
+          <mat-paginator
+            [length]="length()"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize()"
+            [pageSizeOptions]="pageSizeOptions"
+            (page)="onPage($event)"
+          >
+          </mat-paginator>
+        </mat-card-content>
+      </mat-card>
+    </main>
+  `,
+  styles: [
+    `
+      .toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      .spacer {
+        flex: 1 1 auto;
+      }
+      .container {
+        max-width: 980px;
+        margin: 16px auto;
+        padding: 0 12px;
+      }
+      .filters {
+        margin-bottom: 8px;
+      }
+      .filters .full-width {
+        width: 100%;
+      }
+      .table-wrap {
+        overflow: auto;
+      }
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      thead th {
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 10px;
+      }
+      tbody td {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 10px;
+      }
+      .actions-col {
+        width: 128px;
+      }
+      .row-actions {
+        display: flex;
+        gap: 6px;
+      }
+    `,
+  ],
 })
 export class HeroesListComponent {
   private svc = inject(HeroesService);
@@ -130,26 +191,26 @@ export class HeroesListComponent {
   filter = new FormControl('', { nonNullable: true });
 
   pageIndex = signal(0);
-  pageSize  = signal(5);
+  pageSize = signal(5);
   readonly pageSizeOptions = [5, 10, 20];
 
   private pageIndex$ = toObservable(this.pageIndex);
-  private pageSize$  = toObservable(this.pageSize);
+  private pageSize$ = toObservable(this.pageSize);
 
   private filtered$ = combineLatest([
     this.svc.getAll(),
-    this.filter.valueChanges.pipe(startWith(this.filter.value))
+    this.filter.valueChanges.pipe(startWith(this.filter.value)),
   ]).pipe(
     map(([list, term]) => {
       const t = (term ?? '').toLowerCase();
-      return t ? list.filter(h => h.name.toLowerCase().includes(t)) : list;
-    })
+      return t ? list.filter((h) => h.name.toLowerCase().includes(t)) : list;
+    }),
   );
 
-  length = toSignal(this.filtered$.pipe(map(list => list.length)), { initialValue: 0 });
+  length = toSignal(this.filtered$.pipe(map((list) => list.length)), { initialValue: 0 });
 
   private clampEffect = effect(() => {
-    const len  = this.length();
+    const len = this.length();
     const size = this.pageSize();
     const last = Math.max(0, Math.ceil(len / Math.max(1, size)) - 1);
     if (this.pageIndex() > last) this.pageIndex.set(last);
@@ -167,7 +228,7 @@ export class HeroesListComponent {
     map(([list, pageIndex, pageSize]) => {
       const start = pageIndex * pageSize;
       return list.slice(start, start + pageSize);
-    })
+    }),
   );
 
   constructor() {
@@ -185,8 +246,12 @@ export class HeroesListComponent {
 
   trackById = (_: number, item: Hero) => item.id;
 
-  onAdd()  { this.router.navigate(['/heroes/new']); }
-  onEdit(id: string) { this.router.navigate(['/heroes', id, 'edit']); }
+  onAdd() {
+    this.router.navigate(['/heroes/new']);
+  }
+  onEdit(id: string) {
+    this.router.navigate(['/heroes', id, 'edit']);
+  }
 
   confirmDelete(id: string) {
     if (!confirm('¿Seguro que deseas borrar este héroe?')) return;

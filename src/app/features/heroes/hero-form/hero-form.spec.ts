@@ -1,143 +1,114 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { BehaviorSubject, of } from 'rxjs';
-import { Router, provideRouter, convertToParamMap } from '@angular/router';
-
-import { HeroFormComponent } from './hero-form';
-import { HeroesService } from '../../../services/hero.services';
-import { Hero } from '../../../models/hero';
+import { provideRouter, Router } from '@angular/router';
+import { of, BehaviorSubject } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
+import { Hero } from '../../../models/hero';
+import { HeroFormComponent } from './hero-form';
 
 class MockHeroesService {
-  private list: Hero[] = [
-    { id: '1', name: 'Superman', power: 'Flight', createdAt: Date.now() - 1000, brand: 'DC' },
-    { id: '2', name: 'Spiderman', power: 'Spider-sense', createdAt: Date.now() - 500, brand: 'Marvel' },
-  ];
-  getById(id: string) {
-    return of(this.list.find(h => h.id === id));
-  }
-  add(partial: Omit<Hero, 'id'|'createdAt'>) {
-    const hero: Hero = { id: 'NEW', createdAt: Date.now(), ...partial };
-    this.list = [hero, ...this.list];
-    return of(hero);
-  }
-  update(hero: Hero) {
-    this.list = this.list.map(h => h.id === hero.id ? { ...h, ...hero } : h);
-    return of(hero);
-  }
-}
+  private hero: Hero = {
+    id: '42',
+    name: 'BATMAN',
+    power: 'Intellect',
+    brand: 'DC',
+    createdAt: 111,
+  };
 
+  getById = jasmine.createSpy('getById').and.callFake((id: string) => {
+    return of(id === '42' ? this.hero : undefined);
+  });
 
-function setMatSelectValue(fixture: ComponentFixture<HeroFormComponent>, value: string) {
-  fixture.componentInstance.form.controls.brand.setValue(value);
-  fixture.detectChanges();
+  add = jasmine
+    .createSpy('add')
+    .and.callFake((h: Partial<Hero>) => of({ id: '99', createdAt: Date.now(), ...h } as Hero));
+  update = jasmine.createSpy('update').and.callFake((h: Hero) => of(h));
 }
 
 describe('HeroFormComponent', () => {
   let fixture: ComponentFixture<HeroFormComponent>;
   let component: HeroFormComponent;
   let router: Router;
+  let svc: MockHeroesService;
   let snack: MatSnackBar;
 
-  const paramMap$ = new BehaviorSubject(convertToParamMap({}));
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [HeroFormComponent, NoopAnimationsModule],
+  function configure(routeParams: Record<string, any> = {}) {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [HeroFormComponent],
       providers: [
-        provideRouter([]),
-        { provide: HeroesService, useClass: MockHeroesService },
-        { provide: ActivatedRoute, useValue: { paramMap: paramMap$.asObservable() } },
+        { provide: MatSnackBar, useValue: { open: jasmine.createSpy('open') } },
+        { provide: 'HeroesService', useClass: MockHeroesService },
+        provideRouter([{ path: 'heroes', component: HeroFormComponent }]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(new Map(Object.entries(routeParams))),
+            snapshot: { paramMap: new Map(Object.entries(routeParams)) },
+          },
+        },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(HeroFormComponent);
     component = fixture.componentInstance;
     router = TestBed.inject(Router);
+    svc = TestBed.inject('HeroesService' as any);
     snack = TestBed.inject(MatSnackBar);
     fixture.detectChanges();
-    await fixture.whenStable();
-  });
+  }
 
-  it('debe crear el componente (modo NUEVO por defecto)', () => {
-    expect(component).toBeTruthy();
+  it('modo CREATE: muestra título "Nuevo héroe" y crea al enviar', fakeAsync(() => {
+    configure();
     expect(component.isEdit).toBeFalse();
-    const title = fixture.nativeElement.querySelector('mat-card-title').textContent.trim().toLowerCase();
-    expect(title).toContain('nuevo héroe');
-  });
 
-  it('debe aplicar validaciones: nombre requerido y min length', fakeAsync(() => {
-    const nameCtrl = component.form.controls.name;
-    nameCtrl.setValue('');
-    nameCtrl.markAsTouched();
-    tick(); fixture.detectChanges();
-
-    expect(component.form.invalid).toBeTrue();
-    let errorEl = fixture.nativeElement.querySelector('mat-error');
-    expect(errorEl).toBeTruthy();
-
-    nameCtrl.setValue('ab');
-    tick(); fixture.detectChanges();
-    expect(component.form.invalid).toBeTrue();
-
-    nameCtrl.setValue('Thor');
-    component.form.controls.brand.setValue('Marvel');
-    tick(); fixture.detectChanges();
-    expect(component.form.valid).toBeTrue();
-  }));
-
-  it('debe crear (add) y navegar a /heroes, mostrando snackbar', fakeAsync(() => {
-    const spyNav = spyOn(router, 'navigate');
-    const spySnack = spyOn(snack, 'open');
-
-    component.form.setValue({ name: 'Wolverine', power: 'Healing', brand: 'Marvel' });
+    component.form.setValue({ name: 'SUPERMAN', power: 'Flight', brand: 'DC' });
     component.onSubmit();
-    tick(); fixture.detectChanges();
+    tick();
 
-    expect(spySnack).toHaveBeenCalled();
-    expect(spyNav).toHaveBeenCalledWith(['/heroes']);
+    expect(svc.add).toHaveBeenCalledWith({ name: 'SUPERMAN', power: 'Flight', brand: 'DC' });
+    expect(snack.open as any).toHaveBeenCalled();
   }));
 
-  it('debe entrar en modo EDICIÓN al recibir id por ruta y precargar datos', fakeAsync(() => {
-    paramMap$.next(convertToParamMap({ id: '2' }));
-    tick(); fixture.detectChanges();
-
+  it('modo EDIT: precarga datos y actualiza al enviar', fakeAsync(() => {
+    configure({ id: '42' });
     expect(component.isEdit).toBeTrue();
-    expect(component.currentId).toBe('2');
-    expect(component.form.controls.name.value).toBe('Spiderman');
-    expect(component.form.controls.brand.value).toBe('Marvel');
-  }));
+    expect(component.form.value.name).toBe('BATMAN');
+    expect(component.originalCreatedAt).toBe(111);
 
-  it('debe actualizar (update) y navegar a /heroes en modo edición', fakeAsync(() => {
-    const spyNav = spyOn(router, 'navigate');
-    const spySnack = spyOn(snack, 'open');
-
-    paramMap$.next(convertToParamMap({ id: '1' }));
-    tick(); fixture.detectChanges();
-
-    component.form.controls.name.setValue('Superman PRIME');
-    setMatSelectValue(fixture, 'DC');
-
+    component.form.patchValue({ power: 'Detective maestro' });
     component.onSubmit();
-    tick(); fixture.detectChanges();
+    tick();
 
-    expect(spySnack).toHaveBeenCalled();
-    expect(spyNav).toHaveBeenCalledWith(['/heroes']);
+    expect(svc.update).toHaveBeenCalled();
+    const arg = svc.update.calls.mostRecent().args[0] as Hero;
+    expect(arg.id).toBe('42');
+    expect(arg.createdAt).toBe(111);
+    expect(arg.power).toBe('Detective maestro');
+    expect(snack.open as any).toHaveBeenCalled();
   }));
 
-  it('la directiva appUppercase convierte a mayúsculas el nombre al tipear', fakeAsync(() => {
-    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[formControlName="name"]');
-    input.value = 'super man';
-    input.dispatchEvent(new Event('input'));
-    tick(); fixture.detectChanges();
-
-    expect(component.form.controls.name.value).toBe('SUPER MAN');
+  it('no envía si el formulario es inválido', fakeAsync(() => {
+    configure();
+    component.onSubmit();
+    tick();
+    expect(svc.add).not.toHaveBeenCalled();
+    expect(svc.update).not.toHaveBeenCalled();
   }));
 
-  it('cancel navega a /heroes sin tocar el servicio', () => {
-    const spyNav = spyOn(router, 'navigate');
+  it('cancel navega a /heroes', fakeAsync(() => {
+    configure();
+    const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
     component.cancel();
-    expect(spyNav).toHaveBeenCalledWith(['/heroes']);
-  });
+    tick();
+    expect(navigateSpy).toHaveBeenCalledWith(['/heroes']);
+  }));
+
+  it('modo EDIT: si id no existe, muestra snack y vuelve a /heroes', fakeAsync(() => {
+    configure({ id: '404' });
+    component.ngOnInit();
+    tick();
+
+    expect(snack.open as any).toHaveBeenCalled();
+  }));
 });

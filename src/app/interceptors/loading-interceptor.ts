@@ -1,8 +1,5 @@
 import { inject } from '@angular/core';
-import {
-  HttpInterceptorFn,
-  HttpContextToken,
-} from '@angular/common/http';
+import { HttpInterceptorFn, HttpContextToken } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
 import { LoadingService } from '../services/loading';
 
@@ -28,6 +25,6 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
       if (shouldTrack) {
         loading.stop();
       }
-    })
+    }),
   );
 };
