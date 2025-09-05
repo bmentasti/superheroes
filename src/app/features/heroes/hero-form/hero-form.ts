@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { switchMap, of } from 'rxjs';
 
 import { HeroesService } from '../../../services/hero.services';
-import { UppercaseDirective } from '../../../shared/uppercase';
+import { UppercaseDirective } from '../../../shared/uppercase.directive';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -39,7 +39,7 @@ import { MatSelectModule } from '@angular/material/select';
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form">
         <mat-form-field appearance="outline">
           <mat-label>Nombre *</mat-label>
-          <input matInput formControlName="name" appUppercase placeholder="Ej: SUPER LÓPEZ" />
+          <input matInput formControlName="name" appUppercase placeholder="Ej: Superheroe" />
           <mat-error *ngIf="form.controls.name.touched && form.controls.name.invalid">
             El nombre es requerido (mín. 3).
           </mat-error>
