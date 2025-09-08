@@ -1,0 +1,13 @@
+<mat-card class="hero-card">
+  <mat-card-title class="title">{{ hero.name }}</mat-card-title>
+  <mat-card-subtitle class="brand">{{ hero.brand }}</mat-card-subtitle>
+
+  <mat-card-content class="content">
+    <div class="power">Poder: <strong>{{ hero.power }}</strong></div>
+  </mat-card-content>
+
+  <mat-card-actions class="actions">
+    <a mat-button [routerLink]="['/heroes', hero.id, 'edit']">Editar</a>
+    <button mat-button color="warn" (click)="delete.emit(hero)">Borrar</button>
+  </mat-card-actions>
+</mat-card>

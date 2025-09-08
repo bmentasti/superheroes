@@ -1,0 +1,52 @@
+<mat-toolbar color="primary">
+  <span>Superheroes</span>
+  <span class="spacer"></span>
+  <a mat-raised-button color="accent" [routerLink]="['/heroes', 'new']" aria-label="Agregar superhéroe">
+    <mat-icon>add</mat-icon>
+    Nuevo
+  </a>
+</mat-toolbar>
+
+<div class="page">
+  <section class="toolbar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Buscar</mat-label>
+      <input matInput [formControl]="search" placeholder="Nombre o marca..." />
+      <button mat-icon-button matSuffix aria-label="clear" *ngIf="search.value" (click)="search.setValue('')">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+  </section>
+
+  <section class="grid">
+    <ng-container *ngIf="(heroes$ | async) as list">
+      <article *ngFor="let h of (paged$(heroes$) | async)" class="card">
+        <mat-card class="hero-card">
+          <mat-card-header>
+            <mat-card-title>{{ h.name }}</mat-card-title>
+            <mat-card-subtitle>{{ h.brand }}</mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content>
+            Poder: {{ h.power }}
+          </mat-card-content>
+
+          <mat-card-actions class="actions">
+            <a mat-button [routerLink]="['/heroes', h.id, 'edit']">Editar</a>
+            <button mat-button color="warn" (click)="remove(h)">Borrar</button>
+          </mat-card-actions>
+        </mat-card>
+      </article>
+
+      <div class="paginator">
+        <mat-paginator
+          [length]="list.length"
+          [pageSize]="pageSize"
+          [pageIndex]="pageIndex"
+          [pageSizeOptions]="[5, 10, 20]"
+          (page)="page($event)">
+        </mat-paginator>
+      </div>
+    </ng-container>
+  </section>
+</div>

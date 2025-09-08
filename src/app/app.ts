@@ -1,13 +1,11 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { LoadingOverlayComponent } from './shared/loading-overlay/loading-overlay';
 
 @Component({
+  standalone: true,
   selector: 'app-root',
-  imports: [RouterOutlet, LoadingOverlayComponent],
   templateUrl: './app.html',
-  styleUrl: './app.scss',
+  styleUrls: ['./app.scss'],
+  imports: [RouterOutlet]
 })
-export class App {
-  protected readonly title = signal('superheroes');
-}
+export class App {}

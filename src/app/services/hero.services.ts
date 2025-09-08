@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 import { Hero } from '../models/hero';
@@ -38,39 +38,29 @@ function genId(): string {
 
 @Injectable({ providedIn: 'root' })
 export class HeroesService {
-  private readonly _heroes$ = new BehaviorSubject<Hero[]>(seed);
-  private readonly latencyMs = 300;
-
-  getAll(): Observable<Hero[]> {
-    return this._heroes$.asObservable();
-  }
+  private readonly _heroes$ = new BehaviorSubject<Hero[]>(structuredClone(seed));
+  readonly heroes$: Observable<Hero[]> = this._heroes$.asObservable();
 
   getById(id: string): Observable<Hero | undefined> {
-    return this.getAll().pipe(map((list) => list.find((h) => h.id === id)));
+    return this.heroes$.pipe(map(list => list.find(h => h.id === id)));
   }
 
-  searchByName(term: string): Observable<Hero[]> {
-    const t = term.trim().toLowerCase();
-    if (!t) return this.getAll();
-    return this.getAll().pipe(map((list) => list.filter((h) => h.name.toLowerCase().includes(t))));
+  create(input: Omit<Hero, 'id' | 'createdAt'>): Observable<Hero> {
+    const hero: Hero = { ...input, id: crypto.randomUUID(), createdAt: Date.now() };
+    this._heroes$.next([hero, ...this._heroes$.value]);
+    return of(hero).pipe(delay(200));
   }
 
-  add(partial: Omit<Hero, 'id' | 'createdAt'>): Observable<Hero> {
-    const hero: Hero = { id: genId(), createdAt: Date.now(), ...partial };
-    const next = [hero, ...this._heroes$.value];
+  update(id: string, patch: Partial<Hero>): Observable<Hero | undefined> {
+    const next = this._heroes$.value.map(h => (h.id === id ? { ...h, ...patch } : h));
     this._heroes$.next(next);
-    return of(hero).pipe(delay(this.latencyMs));
+    return this.getById(id).pipe(delay(150));
   }
 
-  update(hero: Hero): Observable<Hero> {
-    const next = this._heroes$.value.map((h) => (h.id === hero.id ? { ...h, ...hero } : h));
+  remove(id: string): Observable<boolean> {
+    const next = this._heroes$.value.filter(h => h.id !== id);
+    const removed = next.length !== this._heroes$.value.length;
     this._heroes$.next(next);
-    return of(hero).pipe(delay(this.latencyMs));
-  }
-
-  remove(id: string): Observable<string> {
-    const next = this._heroes$.value.filter((h) => h.id !== id);
-    this._heroes$.next(next);
-    return of(id).pipe(delay(this.latencyMs));
+    return of(removed).pipe(delay(150));
   }
 }

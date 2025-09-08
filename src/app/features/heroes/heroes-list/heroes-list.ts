@@ -1,12 +1,7 @@
-import { Component, inject, signal, effect, computed, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
-import { combineLatest, startWith, map } from 'rxjs';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-
-import { HeroesService } from '../../../services/hero.services';
-import { Hero } from '../../../models/hero';
+import { RouterModule } from '@angular/router';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,22 +9,23 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import {
-  MatPaginatorModule,
-  PageEvent,
-  MatPaginator,
-  MatPaginatorIntl,
-} from '@angular/material/paginator';
+import { MatPaginatorModule, PageEvent, MatPaginatorIntl } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+
+import { combineLatest, map, startWith, Observable } from 'rxjs';
+
+import { HeroesService } from '../../../services/hero.services';
+import { Hero } from '../../../models/hero';
 
 function esPaginatorIntl(): MatPaginatorIntl {
   const intl = new MatPaginatorIntl();
-  intl.itemsPerPageLabel = 'Artículos por página';
+  intl.itemsPerPageLabel = 'Ítems por página';
   intl.nextPageLabel = 'Siguiente';
   intl.previousPageLabel = 'Anterior';
   intl.firstPageLabel = 'Primera página';
   intl.lastPageLabel = 'Última página';
-  intl.getRangeLabel = (page: number, pageSize: number, length: number) => {
+  intl.getRangeLabel = (page, pageSize, length) => {
     if (length === 0 || pageSize === 0) return `0 de ${length}`;
     const start = page * pageSize + 1;
     const end = Math.min((page + 1) * pageSize, length);
@@ -39,13 +35,15 @@ function esPaginatorIntl(): MatPaginatorIntl {
 }
 
 @Component({
-  selector: 'app-heroes-list',
   standalone: true,
-  providers: [{ provide: MatPaginatorIntl, useFactory: esPaginatorIntl }],
+  selector: 'app-heroes-list',
+  templateUrl: './heroes-list.html',
+  styleUrls: ['./heroes-list.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
-    ReactiveFormsModule,
     RouterModule,
+    ReactiveFormsModule,
     MatToolbarModule,
     MatFormFieldModule,
     MatInputModule,
@@ -54,209 +52,59 @@ function esPaginatorIntl(): MatPaginatorIntl {
     MatCardModule,
     MatPaginatorModule,
     MatSnackBarModule,
+    MatDialogModule,
   ],
-  template: `
-    <mat-toolbar color="primary" class="toolbar">
-      <span>Superheroes</span>
-      <span class="spacer"></span>
-      <button mat-raised-button color="accent" (click)="onAdd()">
-        <mat-icon>add</mat-icon> Añadir
-      </button>
-    </mat-toolbar>
-
-    <main class="container">
-      <mat-card>
-        <mat-card-content>
-          <div class="filters">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Filtrar por nombre</mat-label>
-              <input matInput [formControl]="filter" placeholder="Ej: man" />
-              <button
-                *ngIf="filter.value"
-                matSuffix
-                mat-icon-button
-                aria-label="Limpiar"
-                (click)="filter.setValue('')"
-              >
-                <mat-icon>close</mat-icon>
-              </button>
-            </mat-form-field>
-          </div>
-
-          <div class="table-wrap">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Poder</th>
-                  <th>Marca</th>
-                  <th class="actions-col">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let h of paginated$ | async; trackBy: trackById">
-                  <td>{{ h.name }}</td>
-                  <td>{{ h.power || '—' }}</td>
-                  <td>{{ h.brand }}</td>
-                  <td class="row-actions">
-                    <button
-                      mat-icon-button
-                      color="primary"
-                      (click)="onEdit(h.id)"
-                      aria-label="Editar"
-                    >
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button
-                      mat-icon-button
-                      color="warn"
-                      (click)="confirmDelete(h.id)"
-                      aria-label="Borrar"
-                    >
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <mat-paginator
-            [length]="length()"
-            [pageIndex]="pageIndex()"
-            [pageSize]="pageSize()"
-            [pageSizeOptions]="pageSizeOptions"
-            (page)="onPage($event)"
-          >
-          </mat-paginator>
-        </mat-card-content>
-      </mat-card>
-    </main>
-  `,
-  styles: [
-    `
-      .toolbar {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-      }
-      .spacer {
-        flex: 1 1 auto;
-      }
-      .container {
-        max-width: 980px;
-        margin: 16px auto;
-        padding: 0 12px;
-      }
-      .filters {
-        margin-bottom: 8px;
-      }
-      .filters .full-width {
-        width: 100%;
-      }
-      .table-wrap {
-        overflow: auto;
-      }
-      .table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      thead th {
-        text-align: left;
-        border-bottom: 1px solid #e0e0e0;
-        padding: 10px;
-      }
-      tbody td {
-        border-bottom: 1px solid #f0f0f0;
-        padding: 10px;
-      }
-      .actions-col {
-        width: 128px;
-      }
-      .row-actions {
-        display: flex;
-        gap: 6px;
-      }
-    `,
-  ],
+  providers: [{ provide: MatPaginatorIntl, useFactory: esPaginatorIntl }],
 })
 export class HeroesListComponent {
-  private svc = inject(HeroesService);
-  private router = inject(Router);
-  private snack = inject(MatSnackBar);
-  private intl = inject(MatPaginatorIntl);
+  private readonly heroesSvc = inject(HeroesService);
+  private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly search = new FormControl('', { nonNullable: true });
+  readonly search$: Observable<string> = this.search.valueChanges.pipe(startWith(''));
 
-  filter = new FormControl('', { nonNullable: true });
-
-  pageIndex = signal(0);
-  pageSize = signal(5);
-  readonly pageSizeOptions = [5, 10, 20];
-
-  private pageIndex$ = toObservable(this.pageIndex);
-  private pageSize$ = toObservable(this.pageSize);
-
-  private filtered$ = combineLatest([
-    this.svc.getAll(),
-    this.filter.valueChanges.pipe(startWith(this.filter.value)),
+  readonly heroes$: Observable<Hero[]> = combineLatest([
+    this.heroesSvc.heroes$,
+    this.search$,
   ]).pipe(
-    map(([list, term]) => {
-      const t = (term ?? '').toLowerCase();
-      return t ? list.filter((h) => h.name.toLowerCase().includes(t)) : list;
-    }),
+    map(([heroes, term]) => {
+      const t = term.toLowerCase().trim();
+      if (!t) return heroes;
+      return heroes.filter(
+        h => h.name.toLowerCase().includes(t) || h.brand.toLowerCase().includes(t)
+      );
+    })
   );
 
-  length = toSignal(this.filtered$.pipe(map((list) => list.length)), { initialValue: 0 });
+  pageIndex = 0;
+  pageSize = 5;
 
-  private clampEffect = effect(() => {
-    const len = this.length();
-    const size = this.pageSize();
-    const last = Math.max(0, Math.ceil(len / Math.max(1, size)) - 1);
-    if (this.pageIndex() > last) this.pageIndex.set(last);
-  });
+  paged$(list$: Observable<Hero[]>): Observable<Hero[]> {
+    const start = this.pageIndex * this.pageSize;
+    const end = start + this.pageSize;
+    return list$.pipe(map(list => list.slice(start, end)));
+  }
 
-  private refreshRangeLabelEffect = effect(() => {
-    this.pageIndex();
-    this.pageSize();
-    this.length();
+  page(evt: PageEvent) {
+    this.pageIndex = evt.pageIndex;
+    this.pageSize = evt.pageSize;
+  }
 
-    queueMicrotask(() => this.intl.changes.next());
-  });
-
-  paginated$ = combineLatest([this.filtered$, this.pageIndex$, this.pageSize$]).pipe(
-    map(([list, pageIndex, pageSize]) => {
-      const start = pageIndex * pageSize;
-      return list.slice(start, start + pageSize);
-    }),
-  );
-
-  constructor() {
-    this.filter.valueChanges.subscribe(() => {
-      this.pageIndex.set(0);
-      this.paginator?.firstPage();
+  async remove(hero: Hero) {
+    const { ConfirmDialogComponent } = await import('../../../shared/confirm-dialog/confirm-dialog');
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '360px',
+      data: { title: 'Eliminar héroe', message: `¿Seguro que querés eliminar a "${hero.name}"?` },
+      autoFocus: false,
+      restoreFocus: false,
     });
-  }
 
-  onPage(e: PageEvent) {
-    const sizeChanged = e.pageSize !== this.pageSize();
-    this.pageSize.set(e.pageSize);
-    this.pageIndex.set(sizeChanged ? 0 : e.pageIndex);
-  }
-
-  trackById = (_: number, item: Hero) => item.id;
-
-  onAdd() {
-    this.router.navigate(['/heroes/new']);
-  }
-  onEdit(id: string) {
-    this.router.navigate(['/heroes', id, 'edit']);
-  }
-
-  confirmDelete(id: string) {
-    if (!confirm('¿Seguro que deseas borrar este héroe?')) return;
-    this.svc.remove(id).subscribe(() => {
-      this.snack.open('Héroe borrado', 'OK', { duration: 2000 });
+    ref.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.heroesSvc.remove(hero.id).subscribe(ok => {
+        if (ok) this.snack.open('Héroe eliminado', 'OK', { duration: 1800 });
+      });
     });
   }
 }

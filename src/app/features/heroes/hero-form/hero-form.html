@@ -1,0 +1,33 @@
+<mat-card class="form-card">
+  <form class="form-grid" [formGroup]="form" (ngSubmit)="save()" id="heroForm" novalidate>
+    <mat-form-field appearance="outline" class="field">
+      <mat-label>Nombre</mat-label>
+      <mat-icon matPrefix>person</mat-icon>
+      <input matInput formControlName="name" autocomplete="off" />
+      <mat-error *ngIf="form.get('name')?.hasError('required')">El nombre es obligatorio.</mat-error>
+      <mat-error *ngIf="form.get('name')?.hasError('minlength')">Mínimo 2 caracteres.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="field">
+      <mat-label>Poder</mat-label>
+      <mat-icon matPrefix>bolt</mat-icon>
+      <input matInput formControlName="power" autocomplete="off" />
+      <mat-error *ngIf="form.get('power')?.hasError('required')">El poder es obligatorio.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="field full">
+      <mat-label>Marca</mat-label>
+      <mat-icon matPrefix>sell</mat-icon>
+      <input matInput formControlName="brand" autocomplete="off" />
+      <mat-error *ngIf="form.get('brand')?.hasError('required')">La marca es obligatoria.</mat-error>
+    </mat-form-field>
+
+    <div class="actions">
+      <a mat-button routerLink="/heroes">Cancelar</a>
+      <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+        <mat-icon>save</mat-icon>
+        Guardar
+      </button>
+    </div>
+  </form>
+</mat-card>
