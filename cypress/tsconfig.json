@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "types": ["cypress"],
+    "moduleResolution": "nodenext",
+    "module": "nodenext",
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["**/*.ts "]
+}
